@@ -15,6 +15,7 @@
 
 import { AppOptions } from "./app_options.js";
 import { PDFViewerApplication } from "./app.js";
+import { checkHLLayer } from "./inj.js";
 
 /* eslint-disable-next-line no-unused-vars */
 const pdfjsVersion =
@@ -246,8 +247,10 @@ if (
   document.readyState === "complete"
 ) {
   webViewerLoad();
+  checkHLLayer();
 } else {
   document.addEventListener("DOMContentLoaded", webViewerLoad, true);
+  checkHLLayer();
 }
 
 export { PDFViewerApplication, AppOptions as PDFViewerApplicationOptions };
