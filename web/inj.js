@@ -138,17 +138,69 @@ function highLightRects(origin_rects) {
             }
         )
     }
+    findPageOutline(currentPage).then((resp) => {
+        HLS.push(
+            {
+                content: GetSelectionText(),
+                rects: pdfRects,
+                page: currentPage,
+                png: CurrentPageCanvas2PNG(GetAreaNeedToDrawPNG(rects)),
+                doc_position: document.querySelector("#viewBookmark").getAttribute('href'),
+                tags: resp
+            }
+        )
+    })
 
-    HLS.push(
-        {
-            content: GetSelectionText(),
-            rects: pdfRects,
-            page: currentPage,
-            png: CurrentPageCanvas2PNG(GetAreaNeedToDrawPNG(rects)),
-            doc_position: document.querySelector("#viewBookmark").getAttribute('href')
-        }
-    )
 }
+
+async function findPageOutline(pageNumber) {
+    var res = [];
+    await PDFViewerApplication.pdfDocument.getOutline().then(async outline => {
+        await readPDFoutline(pageNumber, outline, PDFViewerApplication.pdfDocument.numPages);
+    });
+
+    async function readPDFoutline(pageNumber, outline, lastLevelMaxPage) {
+        if (outline) {
+            var currentLevelOutline = [];
+            for (var o1index = 0; o1index < outline.length; o1index++) {
+                var o = outline[o1index];
+                const title = o.title;
+                const tag = o.dest[0];
+                await PDFViewerApplication.pdfDocument.getPageIndex(tag).then(function (id) {
+                    currentLevelOutline.push(
+                        {
+                            title: title,
+                            pageNumber: id
+                        }
+                    )
+                });
+            }
+            for (var oindex = 0; oindex < currentLevelOutline.length; oindex++) {
+                if (pageNumber > lastLevelMaxPage) {
+                    break;
+                }
+                if (oindex === currentLevelOutline.length - 1) {// last one
+                    if (pageNumber > currentLevelOutline[oindex].pageNumber) {
+                        res.push(
+                            currentLevelOutline[oindex].title
+                        )
+                        await readPDFoutline(pageNumber, outline[oindex].items, lastLevelMaxPage);
+                    }
+                    break;
+                }
+                if ((pageNumber >= currentLevelOutline[oindex].pageNumber) && (pageNumber < currentLevelOutline[oindex + 1].pageNumber)) {
+                    res.push(
+                        currentLevelOutline[oindex].title
+                    )
+                    await readPDFoutline(pageNumber, outline[oindex].items, currentLevelOutline[oindex + 1].pageNumber - 1);
+                }
+
+            }
+        }
+    }
+
+    return res;
+};
 
 function GetSelectionText() {
     var text = "";
@@ -295,7 +347,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function createToolbarButton(name,func){
+function createToolbarButton(name, func) {
     var HL = document.createElement("Button");
     HL.innerHTML = name;
     HL.onclick = func
@@ -312,8 +364,8 @@ async function checkHLLayer() {
     }
 
     picturebox();// init picture box
-    createToolbarButton("->HL<-",highLight);
-    createToolbarButton("->HLA<-",highLightArea);
+    createToolbarButton("->HL<-", highLight);
+    createToolbarButton("->HLA<-", highLightArea);
 
     while (true) {
         await sleep(700);
