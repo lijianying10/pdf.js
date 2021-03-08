@@ -275,40 +275,49 @@ async function picturebox() {
     var father = document.body;
     var box = document.getElementById("box");
     var scale = document.getElementById("scale");
-    // 图片移动效果
-    box.onmousedown = function (ev) {
-        var oEvent = ev;
-        // 浏览器有一些图片的默认事件,这里要阻止
-        oEvent.preventDefault();
-        var disX = oEvent.clientX - box.offsetLeft;
-        var disY = oEvent.clientY - box.offsetTop;
-        father.onmousemove = function (ev) {
-            oEvent = ev;
-            oEvent.preventDefault();
-            var x = oEvent.clientX - disX;
-            var y = oEvent.clientY - disY;
 
-            // 图形移动的边界判断
-            x = x <= 0 ? 0 : x;
-            x = x >= father.offsetWidth - box.offsetWidth ? father.offsetWidth - box.offsetWidth : x;
-            y = y <= 0 ? 0 : y;
-            y = y >= father.offsetHeight - box.offsetHeight ? father.offsetHeight - box.offsetHeight : y;
-            box.style.left = x + 'px';
-            box.style.top = y + 'px';
-        }
-        // 图形移出父盒子取消移动事件,防止移动过快触发鼠标移出事件,导致鼠标弹起事件失效
-        father.onmouseleave = function () {
-            father.onmousemove = null;
-            father.onmouseup = null;
-        }
-        // 鼠标弹起后停止移动
-        father.onmouseup = function () {
-            father.onmousemove = null;
-            father.onmouseup = null;
-        }
+  var startPos = null
+  function onDivMove(ev) {
+    if (!startPos) {
+      return
     }
+    const localClientX = ev.clientX ? ev.clientX : ev.touches[0].clientX
+    const localClientY = ev.clientY ? ev.clientY : ev.touches[0].clientY
+    var x = localClientX - box.offsetWidth / 2;
+    var y = localClientY - box.offsetHeight / 2;
+
+    // 图形移动的边界判断
+    // x = x <= 0 ? 0 : x;
+    // x = x >= father.offsetWidth - box.offsetWidth ? father.offsetWidth - box.offsetWidth : x;
+    // y = y <= 0 ? 0 : y;
+    // y = y >= father.offsetHeight - box.offsetHeight ? father.offsetHeight - box.offsetHeight : y;
+    box.style.transform = `translate(${x}px, ${y}px)`
+    // box.style.left = x + 'px';
+    // box.style.top = y + 'px';
+  }
+
+  function onMouseDown(ev) {
+    startPos = ev;
+    // 浏览器有一些图片的默认事件,这里要阻止
+    startPos.preventDefault();
+    // 图形移出父盒子取消移动事件,防止移动过快触发鼠标移出事件,导致鼠标弹起事件失效
+  }
+
+  function onEventEnd(ev) {
+    startPos = null
+  }
+
+  // 图片移动效果
+  box.addEventListener('touchstart', onMouseDown)
+  box.addEventListener('mousedown', onMouseDown)
+
+  box.addEventListener('touchmove', onDivMove)
+  box.addEventListener('mousemove', onDivMove)
+
+  box.addEventListener('touchend', onEventEnd)
+  box.addEventListener('mouseup', onEventEnd)
     // 图片缩放效果
-    scale.onmousedown = function (e) {
+    function onScaleDown(e) {
         // 阻止冒泡,避免缩放时触发移动事件
         e.stopPropagation();
         e.preventDefault();
@@ -341,6 +350,7 @@ async function picturebox() {
             father.onmouseup = null;
         }
     }
+  scale.addEventListener('mousedown', onScaleDown)
 }
 
 function sleep(ms) {
